@@ -726,48 +726,76 @@ export default function Chat() {
                 ) : (
                   messages
                     .filter((m) => m.role !== "system")
-                    .map((message) => (
-                      <Message from={message.role} key={message.id}>
-                        <MessageContent>
-                          {message.parts.map((part, i) => {
-                            if (part.type === "text") {
-                              const text =
-                                (part as { text?: string }).text ?? "";
-                              return <Response key={i}>{text}</Response>;
-                            }
+                    .map((message) => {
+                      const parts =
+                        (Array.isArray((message as any).parts) &&
+                          (message as any).parts) ||
+                        (Array.isArray((message as any).content) &&
+                          (message as any).content) ||
+                        [];
 
-                            // Render tool calls
-                            if (part.type.startsWith("tool-")) {
-                              const toolPart = part as ToolUIPart;
-                              const isCompleted =
-                                toolPart.state === "output-available" ||
-                                toolPart.state === "output-error";
+                      return (
+                        <Message from={message.role} key={message.id}>
+                          <MessageContent>
+                            {parts.map((part: any, i: number) => {
+                              if (part.type === "text") {
+                                const text = (part as { text?: string }).text ?? "";
+                                return <Response key={i}>{text}</Response>;
+                              }
 
-                              return (
-                                <Tool key={i} defaultOpen={isCompleted}>
-                                  <ToolHeader
-                                    type={toolPart.type}
-                                    state={toolPart.state}
-                                  />
-                                  <ToolContent>
-                                    <ToolInput input={toolPart.input} />
-                                    {(toolPart.state === "output-available" ||
-                                      toolPart.state === "output-error") && (
-                                      <ToolOutput
-                                        output={toolPart.output}
-                                        errorText={toolPart.errorText}
-                                      />
-                                    )}
-                                  </ToolContent>
-                                </Tool>
-                              );
-                            }
+                              // Render images/files
+                              if (
+                                (part.type === "image" && part.image) ||
+                                (part.type === "file" &&
+                                  part.mediaType?.startsWith("image/") &&
+                                  part.url)
+                              ) {
+                                const src = part.image || part.url;
+                                const alt = part.filename || "image attachment";
+                                return (
+                                  <div key={i} className="rounded-md border overflow-hidden max-w-md">
+                                    <img
+                                      src={src}
+                                      alt={alt}
+                                      className="w-full h-auto object-cover"
+                                    />
+                                  </div>
+                                );
+                              }
 
-                            return null;
-                          })}
-                        </MessageContent>
-                      </Message>
-                    ))
+                              // Render tool calls
+                              if (part.type?.startsWith("tool-")) {
+                                const toolPart = part as ToolUIPart;
+                                const isCompleted =
+                                  toolPart.state === "output-available" ||
+                                  toolPart.state === "output-error";
+
+                                return (
+                                  <Tool key={i} defaultOpen={isCompleted}>
+                                    <ToolHeader
+                                      type={toolPart.type}
+                                      state={toolPart.state}
+                                    />
+                                    <ToolContent>
+                                      <ToolInput input={toolPart.input} />
+                                      {(toolPart.state === "output-available" ||
+                                        toolPart.state === "output-error") && (
+                                        <ToolOutput
+                                          output={toolPart.output}
+                                          errorText={toolPart.errorText}
+                                        />
+                                      )}
+                                    </ToolContent>
+                                  </Tool>
+                                );
+                              }
+
+                              return null;
+                            })}
+                          </MessageContent>
+                        </Message>
+                      );
+                    })
                 )}
               </ConversationContent>
               <ConversationScrollButton />
