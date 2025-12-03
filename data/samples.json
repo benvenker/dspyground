@@ -86,7 +86,51 @@
         }
       ],
       "createdAt": "2025-10-13T06:31:29.126Z"
+    },
+    {
+      "id": "NhNBVX-Hb4V7nmDH2hvt2",
+      "name": "first-test",
+      "timestamp": "2025-12-02T18:57:53.920Z",
+      "samples": [
+        {
+          "id": "1764713060552-esluis",
+          "timestamp": "2025-12-02T22:04:20.552Z",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Okay, draft me your response to this original post provided given the context background using my voice per your system prompt.\n\n<context>\nOkay, for background, this original post was from one of the cofounders of Cline, which is an open-source VSCode plug-in that sort of competes with Cursor. It's a VSCode plug-in, not a fork, but just an AI-coded coding assistant. Kylo Code is a new competing coding assistant that forked Cline. It's also founded by Sid Sabrandi, the former CEO of GitLab. The Cline CEO is kind of giving him shit for taking credit for Cline by being sarcastic about how he forked Cline. I think that's kind of bullshit because, like, Cline's open source, you should know that's gonna happen. You know what I mean?\n</context>\n\n<original_post> @pashmerepat \n> We launched our application within a month\n> We were really methodical and tasteful in pressing that fork button on Github \n\nQuote: \n@sytses \n> 6 months ago I founded @kilocode to empower developers to pick the best model for the task at hand. We launched our application within a month and have since grown to become the best AI coding orchestration application. Over the last 5 months token usage has grown 1000x, from 4...see more \n</original_post>"
+            },
+            {
+              "role": "assistant",
+              "content": "{\n  \"reply\": \"tbh: open source means people will press fork. you don't get to be surprised when someone 'tastefully' hits the button. sid sabrandi ran gitlab — he knows how this works. launching in a month = shipping, not stealing. if you didn't want forks, don't publish.\",\n  \"tone_notes\": \"skeptical but curious, dry deadpan wit, conversational; uses lowercase starts and direct phrasing; pushes back on performative outrage about forking; names Sid and GitLab to ground the point.\",\n  \"risk_flags\": []\n}"
+            }
+          ],
+          "feedback": {
+            "rating": "negative",
+            "comment": "This is just kind of odd. It's not bad, but it uses things I don't normally do, like a colon after \"tbh,\" quoting for the \"tastefully\" part. I don't know, it's just kind of close. It's not too far off from my voice, like I can see how this is an attempt. It's better than I've seen so many other models do, but it's just missing, I don't know, authenticity."
+          }
+        },
+        {
+          "id": "1764719234013-9ewpcf",
+          "timestamp": "2025-12-02T23:47:14.013Z",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Okay, draft me your response to this original post provided given the context background using my voice per your system prompt.\n\n<context>\nCodex CLI is what's being referenced in the original post below, and the Tweet is about that, saying that OpenAI's valuation of Codex is so good that it justifies the whole valuation for OpenAI, just on that product alone, independent of ChatGPT, the API platform, etc. \n</context>\n\n<original_post>\n\n@yacineMTB\n\ncodex alone justifies openai's entire valuation\n\n</original_post>"
+            },
+            {
+              "role": "assistant",
+              "content": "love the enthusiasm, but codex alone justifies openai? tbh codex/copilot is huge—dev productivity, enterprise seats, github/msft channel. still, that claim needs 100% dev capture + monopoly on codegen + insane monetization. possible? maybe. likely? not. pillar, not cathedral."
+            }
+          ],
+          "feedback": {
+            "rating": "negative",
+            "comment": "sounds like i'm talking down to the person",
+            "gold_reply": "Haven’t seen anyone talk about how emblematic this is of the UX tradeoffs products face. Claude Code was so dominant, adding more great features, but the superior model won overnight."
+          }
+        }
+      ]
     }
   ],
-  "currentGroupId": "default"
+  "currentGroupId": "NhNBVX-Hb4V7nmDH2hvt2"
 }

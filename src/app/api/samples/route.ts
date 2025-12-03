@@ -42,6 +42,7 @@ const MessageSchema = z.object({
 const FeedbackSchema = z.object({
   rating: z.enum(["positive", "negative"]),
   comment: z.string().optional(),
+  gold_reply: z.string().optional(),
 });
 
 // Schema for samples with messages (including tool calls)
@@ -234,6 +235,7 @@ export async function POST(req: Request) {
         ? {
             rating: json.feedback.rating,
             comment: json.feedback.comment,
+            gold_reply: json.feedback.gold_reply,
           }
         : undefined,
     };

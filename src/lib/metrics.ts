@@ -25,6 +25,7 @@ export interface Trajectory {
   feedback?: {
     rating: "positive" | "negative";
     comment?: string;
+    gold_reply?: string;
   };
 }
 
@@ -198,11 +199,82 @@ export async function judgeAndScoreSample(
 
   const isPositiveFeedback = sample.feedback?.rating === "positive";
   const feedbackComment = sample.feedback?.comment || "No feedback provided";
+  const goldReply = sample.feedback?.gold_reply;
+
+  const TRUNCATE_INPUT = 1000;
+  const TRUNCATE_RESPONSE = 2000;
+
+  const extractUserInput = (messages: Message[]): string => {
+    const userMessages = messages.filter((m) => m.role === "user");
+    if (userMessages.length === 0) return "(No user input)";
+
+    const firstUser = userMessages[0];
+    const content =
+      typeof firstUser.content === "string"
+        ? firstUser.content
+        : firstUser.content
+            .map((p) => (p.type === "text" ? p.text || "" : ""))
+            .join(" ");
+
+    return content.length > TRUNCATE_INPUT
+      ? `${content.slice(0, TRUNCATE_INPUT)}...`
+      : content;
+  };
+
+  const formatResponseCompact = (message: Message | null): string => {
+    if (!message) return "(No response)";
+
+    const toText = (content: Message["content"]) => {
+      if (typeof content === "string") return content;
+      return content
+        .map((p) => {
+          if (p.type === "text") return p.text || "";
+          if (p.type === "tool-call") return `[Tool call: ${p.toolName}]`;
+          if (p.type === "tool-result") return `[Tool result: ${p.toolName}]`;
+          return "";
+        })
+        .filter(Boolean)
+        .join("\n");
+    };
+
+    const text = toText(message.content);
+    return text.length > TRUNCATE_RESPONSE
+      ? `${text.slice(0, TRUNCATE_RESPONSE)}...`
+      : text;
+  };
+
+  const hasToolCalls = (msgs: Message[]) =>
+    msgs.some(
+      (m) =>
+        Array.isArray(m.content) &&
+        m.content.some(
+          (p) => p.type === "tool-call" || p.type === "tool-result"
+        )
+    );
+
+  const fullTrajectoryNeeded =
+    hasToolCalls(sample.messages) || hasToolCalls(generatedTrajectory.messages);
+
+  const sampleAssistantMessages = sample.messages.filter(
+    (m) => m.role === "assistant"
+  );
+  const lastSampleResponse =
+    sampleAssistantMessages[sampleAssistantMessages.length - 1] || null;
+
+  const generatedAssistantMessages = generatedTrajectory.messages.filter(
+    (m) => m.role === "assistant"
+  );
+  const lastGeneratedResponse =
+    generatedAssistantMessages[generatedAssistantMessages.length - 1] || null;
 
   // Build judgment prompt using config
   const comparisonContext = isPositiveFeedback
     ? config.positive_feedback_instruction
-    : config.negative_feedback_instruction;
+    : goldReply
+      ? `${config.negative_feedback_instruction}
+
+A GOLD REPLY has been provided. The generated response should closely match this ideal in tone, content, and style.`
+      : config.negative_feedback_instruction;
 
   // Build dimension descriptions from config
   const dimensionDescriptions = Object.entries(config.dimensions)
@@ -216,6 +288,10 @@ export async function judgeAndScoreSample(
     ? config.comparison_positive
     : config.comparison_negative;
 
+  const goldReplySection = goldReply
+    ? `\nGOLD REPLY (User-provided ideal response):\n"""\n${goldReply}\n"""\nCompare the generated response against this gold reply for tone, content accuracy, and style.\n`
+    : "";
+
   const judgmentPrompt = `${config.evaluation_instructions}
 
 CONTEXT:
@@ -225,12 +301,27 @@ USER FEEDBACK: "${feedbackComment}"
 Feedback Type: ${
     isPositiveFeedback ? "POSITIVE (approved)" : "NEGATIVE (rejected)"
   }
+${goldReplySection}
+---
 
-SAMPLE TRAJECTORY (Reference):
+USER INPUT:
+${extractUserInput(sample.messages)}
+
+REFERENCE RESPONSE (from sample):
+${formatResponseCompact(lastSampleResponse)}
+
+GENERATED RESPONSE (to evaluate):
+${formatResponseCompact(lastGeneratedResponse)}
+
+${fullTrajectoryNeeded ? `---
+APPENDIX - Full Trajectories (for tool analysis):
+
+Sample Messages:
 ${JSON.stringify(sample.messages, null, 2)}
 
-GENERATED TRAJECTORY (To Evaluate):
+Generated Messages:
 ${JSON.stringify(generatedTrajectory.messages, null, 2)}
+` : ""}
 
 EVALUATION DIMENSIONS:
 ${selectedMetrics.map((m) => `- ${m}`).join("\n")}
