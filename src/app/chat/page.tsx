@@ -14,6 +14,8 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
   PromptInputTools,
+  PromptInputAttachments,
+  PromptInputAttachment,
 } from "@/components/ai-elements/prompt-input";
 import { Response } from "@/components/ai-elements/response";
 import {
@@ -784,6 +786,15 @@ export default function Chat() {
                 className="min-h-[44px] max-h-[200px]"
               />
             </PromptInputBody>
+            <PromptInputAttachments className="px-2">
+              {(file) => (
+                <PromptInputAttachment
+                  key={file.id}
+                  data={file}
+                  className="h-16 w-16"
+                />
+              )}
+            </PromptInputAttachments>
             <PromptInputToolbar>
               <PromptInputTools>
                 {preferencesLoaded && selectedModel ? (
