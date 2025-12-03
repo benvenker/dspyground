@@ -68,9 +68,12 @@ export async function initCommand() {
       await fs.access(envPath);
       console.log("⚠️  .env.example already exists, skipping...");
     } catch {
-      const envTemplate = `# AI Gateway API Key (Required)
-# Get your key from: https://vercel.com/docs/ai-gateway/getting-started
-AI_GATEWAY_API_KEY=your_api_key_here
+      const envTemplate = `# OpenRouter API Key (Required - default provider)
+# Get your key from: https://openrouter.ai/
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# Vercel AI Gateway (Optional legacy)
+# AI_GATEWAY_API_KEY=your_ai_gateway_api_key_here
 
 # Voice Feedback Feature (Optional)
 # Enable voice input in feedback dialog by pressing & holding space bar
@@ -110,7 +113,10 @@ AI_GATEWAY_API_KEY=your_api_key_here
     console.log("Next steps:");
     console.log("1. Copy .env.example to .env and add your API keys");
     console.log(
-      "   - AI_GATEWAY_API_KEY (required): https://vercel.com/docs/ai-gateway/getting-started"
+      "   - OPENROUTER_API_KEY (required): https://openrouter.ai/"
+    );
+    console.log(
+      "   - AI_GATEWAY_API_KEY (optional): https://vercel.com/docs/ai-gateway/getting-started"
     );
     console.log("   - OPENAI_API_KEY (optional): For voice feedback feature");
     console.log("   - OPENAI_BASE_URL (optional): For custom OpenAI endpoints");

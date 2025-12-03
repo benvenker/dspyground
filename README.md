@@ -99,14 +99,15 @@ export default {
 Create a `.env` file in your project root:
 
 ```bash
-AI_GATEWAY_API_KEY=your_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key  # required (default provider)
+# Optional legacy: AI_GATEWAY_API_KEY=your_ai_gateway_api_key_here
 
 # Optional: For voice feedback feature (press & hold space bar in feedback dialog)
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_BASE_URL=https://api.openai.com/v1  # Optional: Custom OpenAI-compatible endpoint
 ```
 
-The `AI_GATEWAY_API_KEY` will be used by DSPyground to access AI models through [AI Gateway](https://vercel.com/docs/ai-gateway/getting-started). Follow the [getting started guide](https://vercel.com/docs/ai-gateway/getting-started) to create your API key.
+By default the app uses the OpenRouter provider via AI SDK. If you prefer Vercel AI Gateway, set `AI_GATEWAY_API_KEY` and adjust the provider in `src/lib/ai-provider.ts`.
 
 **Voice Feedback (Optional):**
 - `OPENAI_API_KEY`: Required for voice feedback feature. Allows you to record voice feedback in the evaluation dialog by pressing and holding the space bar. Uses OpenAI's Whisper for transcription.

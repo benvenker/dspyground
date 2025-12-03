@@ -4,12 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
-import { createContext, useContext, useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import {
-  oneDark,
-  oneLight,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
+import { createContext, useContext, useMemo, useState } from "react";
 
 type CodeBlockContextType = {
   code: string;
@@ -35,6 +30,31 @@ export const CodeBlock = ({
   ...props
 }: CodeBlockProps) => (
   <CodeBlockContext.Provider value={{ code }}>
+    <PlainCodeBlock
+      code={code}
+      language={language}
+      showLineNumbers={showLineNumbers}
+      className={className}
+      {...props}
+    >
+      {children}
+    </PlainCodeBlock>
+  </CodeBlockContext.Provider>
+);
+
+type PlainCodeBlockProps = CodeBlockProps;
+
+const PlainCodeBlock = ({
+  code,
+  language,
+  showLineNumbers,
+  className,
+  children,
+  ...props
+}: PlainCodeBlockProps) => {
+  const lines = useMemo(() => code.split("\n"), [code]);
+
+  return (
     <div
       className={cn(
         "relative w-full overflow-hidden rounded-md border bg-background text-foreground",
@@ -42,53 +62,19 @@ export const CodeBlock = ({
       )}
       {...props}
     >
-      <div className="relative">
-        <SyntaxHighlighter
-          className="overflow-hidden dark:hidden"
-          codeTagProps={{
-            className: "font-mono text-sm",
-          }}
-          customStyle={{
-            margin: 0,
-            padding: "1rem",
-            fontSize: "0.875rem",
-            background: "hsl(var(--background))",
-            color: "hsl(var(--foreground))",
-          }}
-          language={language}
-          lineNumberStyle={{
-            color: "hsl(var(--muted-foreground))",
-            paddingRight: "1rem",
-            minWidth: "2.5rem",
-          }}
-          showLineNumbers={showLineNumbers}
-          style={oneLight}
-        >
-          {code}
-        </SyntaxHighlighter>
-        <SyntaxHighlighter
-          className="hidden overflow-hidden dark:block"
-          codeTagProps={{
-            className: "font-mono text-sm",
-          }}
-          customStyle={{
-            margin: 0,
-            padding: "1rem",
-            fontSize: "0.875rem",
-            background: "hsl(var(--background))",
-            color: "hsl(var(--foreground))",
-          }}
-          language={language}
-          lineNumberStyle={{
-            color: "hsl(var(--muted-foreground))",
-            paddingRight: "1rem",
-            minWidth: "2.5rem",
-          }}
-          showLineNumbers={showLineNumbers}
-          style={oneDark}
-        >
-          {code}
-        </SyntaxHighlighter>
+      <div className="relative flex text-sm">
+        {showLineNumbers && (
+          <div className="select-none bg-muted/60 px-3 py-3 text-xs text-muted-foreground">
+            {lines.map((_, idx) => (
+              <div key={idx} className="leading-6 tabular-nums">
+                {idx + 1}
+              </div>
+            ))}
+          </div>
+        )}
+        <pre className="w-full overflow-auto px-4 py-3 font-mono text-[13px] leading-6">
+          <code data-language={language}>{code}</code>
+        </pre>
         {children && (
           <div className="absolute top-2 right-2 flex items-center gap-2">
             {children}
@@ -96,8 +82,8 @@ export const CodeBlock = ({
         )}
       </div>
     </div>
-  </CodeBlockContext.Provider>
-);
+  );
+};
 
 export type CodeBlockCopyButtonProps = ComponentProps<typeof Button> & {
   onCopy?: () => void;

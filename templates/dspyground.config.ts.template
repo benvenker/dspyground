@@ -84,4 +84,3 @@ export default {
     extractionModel: 'openai/gpt-4o-mini' // Model to extract rating and feedback from transcript
   }
 }
-
