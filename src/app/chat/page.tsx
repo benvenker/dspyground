@@ -317,21 +317,11 @@ export default function Chat() {
       url?: string;
       mediaType?: string;
       type?: string;
+      filename?: string;
     }>;
   }) => {
     const text = message.text?.trim();
-    const imageParts =
-      message.files
-        ?.filter(
-          (file) => file?.url && file?.mediaType?.startsWith("image/")
-        )
-        .map((file) => ({
-          type: "image" as const,
-          image: file.url!,
-          mimeType: file.mediaType,
-        })) ?? [];
-
-    if (!text && imageParts.length === 0) return;
+    const hasFiles = (message.files?.length ?? 0) > 0;
 
     try {
       if (useStructuredOutput) {
@@ -339,13 +329,14 @@ export default function Chat() {
         setCurrentPrompt(text);
         submit(text);
       } else {
-          const content = [
-            ...(text ? [{ type: "text" as const, text }] : []),
-            ...imageParts,
-          ];
-          // sendMessage accepts either {text} or {content}; use content to pass images
-          // @ts-expect-error content is supported by ai-sdk sendMessage
-          sendMessage({ content });
+        const allowEmptySubmit = !text && hasFiles;
+        await sendMessage(
+          { content: text ?? "" },
+          {
+            experimental_attachments: message.files as any,
+            allowEmptySubmit,
+          }
+        );
       }
     } catch (error) {
       console.error("Send error:", error);
