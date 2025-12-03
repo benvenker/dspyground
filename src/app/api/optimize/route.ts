@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getDataDirectory, loadUserConfig } from "@/lib/config-loader";
+import {
+  getDataDirectory,
+  getSystemPromptFromFile,
+  loadUserConfig,
+} from "@/lib/config-loader";
 import { generateObject, generateText } from "ai";
 import { promises as fs } from "fs";
 import { nanoid } from "nanoid";
@@ -51,7 +55,11 @@ async function loadSamples(groupId?: string): Promise<Sample[]> {
 // Helper to load prompt from config
 async function loadPrompt(): Promise<string> {
   const config = await loadUserConfig();
-  return config.systemPrompt || "You are a helpful assistant.";
+  return (
+    getSystemPromptFromFile() ||
+    config.systemPrompt ||
+    "You are a helpful assistant."
+  );
 }
 
 // Helper to load schema from config (Zod schema)

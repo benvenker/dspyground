@@ -1,6 +1,7 @@
 import { watch } from "fs";
 import path from "path";
 import { z } from "zod";
+import fs from "fs";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ToolDefinition = any; // AI SDK tool type - using any to allow user's custom tools
@@ -180,4 +181,22 @@ export function stopConfigWatcher() {
     configWatcher = null;
     console.log("🛑 Stopped watching config file");
   }
+}
+
+export function getSystemPromptFromFile(): string | null {
+  try {
+    const promptOverridePath = path.join(
+      getDataDirectory(),
+      "system-prompt.txt"
+    );
+    if (fs.existsSync(promptOverridePath)) {
+      const override = fs.readFileSync(promptOverridePath, "utf-8");
+      if (override?.trim()) {
+        return override;
+      }
+    }
+  } catch (error) {
+    console.warn("⚠️  Could not read system prompt override:", error);
+  }
+  return null;
 }

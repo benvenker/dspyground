@@ -1,10 +1,14 @@
-import { loadUserConfig } from "@/lib/config-loader";
+import {
+  getSystemPromptFromFile,
+  loadUserConfig,
+} from "@/lib/config-loader";
 import {
   convertToModelMessages,
   stepCountIs,
   streamObject,
   streamText,
 } from "ai";
+import "@/lib/ai-provider";
 import "dotenv/config";
 
 export const maxDuration = 30;
@@ -15,16 +19,15 @@ export async function POST(req: Request) {
   // Check for parameters in URL
   const url = new URL(req.url);
   const useStructuredOutput = url.searchParams.get("structured") === "true";
-  const modelId = url.searchParams.get("model") || "openai/gpt-4o-mini";
-
-  console.log("📊 Structured output:", useStructuredOutput ? "ACTIVE" : "OFF");
-  console.log("🤖 Model:", modelId);
+  const modelId =
+    url.searchParams.get("model") || "openai/gpt-4o-mini";
 
   // Load user config
   const config = await loadUserConfig();
 
   // Get system prompt from config
-  const systemPrompt = config.systemPrompt;
+  const systemPrompt =
+    getSystemPromptFromFile() || config.systemPrompt || undefined;
 
   // Validate schema is defined when structured output is enabled
   if (useStructuredOutput && !config.schema) {
@@ -44,24 +47,66 @@ export async function POST(req: Request) {
   if (useStructuredOutput) {
     // Use schema from config (already validated above)
     const schema = config.schema!; // Non-null assertion safe here due to validation above
-    console.log("📋 Using Zod schema from config");
 
     // Get messages array - required for both structured and non-structured
     const messages = body.messages || [];
-    console.log(
-      `💬 Processing structured output with ${messages.length} messages`
-    );
 
     // Filter out any malformed messages and ensure content exists
-    const validMessages = messages
-      .filter((msg: any) => msg && msg.role && msg.content !== undefined)
-      .map((msg: any) => ({
-        role: msg.role,
-        content:
-          typeof msg.content === "string"
-            ? msg.content
-            : String(msg.content || ""),
-      }));
+    // Convert UI messages (which include role/content) into provider format
+    const extractText = (content: any): string => {
+      if (typeof content === "string") return content;
+      if (Array.isArray(content)) {
+        return content
+          .map((item) => {
+            if (typeof item === "string") return item;
+            if (item && typeof item === "object" && "text" in item)
+              return String((item as any).text ?? "");
+            if (item && typeof item === "object" && "content" in item)
+              return String((item as any).content ?? "");
+            return "";
+          })
+          .join("\n");
+      }
+      if (content && typeof content === "object") {
+        if ("text" in content) return String((content as any).text ?? "");
+        if ("content" in content) return String((content as any).content ?? "");
+      }
+      return "";
+    };
+
+    let validMessages = (messages || [])
+      .filter((msg: any) => msg && msg.role)
+      .map((msg: any) => {
+        const raw = msg.content ?? msg.parts ?? msg.text ?? msg.message ?? "";
+        const text = extractText(raw);
+        const trimmed = text.trim();
+        return trimmed
+          ? {
+              role: msg.role,
+              content: [{ type: "text", text: trimmed }],
+            }
+          : null;
+      })
+      .filter(Boolean);
+
+    // Fallback: if no valid messages, but a prompt/body was sent, add it as a single user message
+    if (validMessages.length === 0) {
+      const rawPrompt =
+        body.prompt ||
+        body.input ||
+        body.message ||
+        body.text ||
+        "";
+      const trimmed = typeof rawPrompt === "string" ? rawPrompt.trim() : "";
+      if (trimmed) {
+        validMessages = [
+          {
+            role: "user",
+            content: [{ type: "text", text: trimmed }],
+          },
+        ];
+      }
+    }
 
     if (validMessages.length === 0) {
       return new Response(
@@ -75,16 +120,15 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log(`✅ ${validMessages.length} valid messages prepared`);
-
     try {
       const objectResult = streamObject({
         model: modelId,
         schema: schema,
         system: systemPrompt,
-        messages: validMessages as any, // streamObject expects raw messages, not converted
+        messages: validMessages as any,
       });
 
+      // ai@5.0.44 exposes toTextStreamResponse() for streamObject results
       return objectResult.toTextStreamResponse();
     } catch (error) {
       console.error("❌ Error in structured output:", error);

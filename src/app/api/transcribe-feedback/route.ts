@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
     console.log("[Transcribe Feedback] Transcript:", transcript);
 
     // Step 2: Extract structured feedback from transcript
-    const extractionModel = voiceConfig.extractionModel || "openai/gpt-4o-mini";
+    const extractionModel =
+      voiceConfig.extractionModel || "openai/gpt-4o-mini";
 
     // Parse model string (format: provider/model-name)
     const [provider, modelName] = extractionModel.split("/");
