@@ -145,8 +145,57 @@ export async function POST(req: Request) {
     }
   }
 
-  // Otherwise use regular streamText with messages array
-  const messages = Array.isArray(body.messages) ? body.messages : [];
+  // Otherwise use regular streamText with messages array.
+  // Support both the standard ai-sdk payload (messages) and the simplified
+  // content + experimental_attachments shape we send from the client.
+  let messages = Array.isArray(body.messages) ? body.messages : [];
+
+  if (messages.length === 0) {
+    const contentParts: any[] = [];
+
+    const text =
+      typeof body.content === "string" ? body.content.trim() : undefined;
+    if (text) {
+      contentParts.push({ type: "text", text });
+    }
+
+    const attachments = Array.isArray(body.experimental_attachments)
+      ? body.experimental_attachments
+      : [];
+
+    for (const file of attachments) {
+      if (!file) continue;
+      const mediaType = (file as any).mediaType || (file as any).mimeType;
+      const url = (file as any).url || (file as any).data;
+      const name = (file as any).filename || (file as any).name;
+
+      if (mediaType?.startsWith("image/") && url) {
+        contentParts.push({
+          type: "image",
+          image: url,
+          mimeType: mediaType,
+          name,
+        });
+      } else if (url) {
+        contentParts.push({
+          type: "file",
+          data: url,
+          mimeType: mediaType,
+          name,
+        });
+      }
+    }
+
+    if (contentParts.length > 0) {
+      messages = [
+        {
+          role: "user",
+          content: contentParts,
+        },
+      ];
+    }
+  }
+
   const result = streamText({
     model: modelId,
     tools: config.tools || {},
