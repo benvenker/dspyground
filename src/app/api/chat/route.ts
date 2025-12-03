@@ -196,11 +196,77 @@ export async function POST(req: Request) {
     }
   }
 
+  const normalized = messages
+    .filter((m: any) => m && m.role)
+    .map((m: any) => {
+      const contentParts: any[] = [];
+
+      const rawContent =
+        (m as any).content ?? (m as any).parts ?? (m as any).text ?? [];
+      if (Array.isArray(rawContent)) {
+        contentParts.push(...rawContent);
+      } else if (typeof rawContent === "string" && rawContent.trim()) {
+        contentParts.push({ type: "text", text: rawContent.trim() });
+      } else if (
+        rawContent &&
+        typeof rawContent === "object" &&
+        "text" in rawContent
+      ) {
+        const t = (rawContent as any).text;
+        if (typeof t === "string" && t.trim()) {
+          contentParts.push({ type: "text", text: t.trim() });
+        }
+      }
+
+      const attachments = Array.isArray((m as any).attachments)
+        ? (m as any).attachments
+        : [];
+      for (const file of attachments) {
+        if (!file) continue;
+        const mediaType = (file as any).mediaType || (file as any).mimeType;
+        const url = (file as any).url || (file as any).data;
+        const name = (file as any).filename || (file as any).name;
+        if (mediaType?.startsWith("image/") && url) {
+          contentParts.push({
+            type: "image",
+            image: url,
+            mimeType: mediaType,
+            name,
+          });
+        } else if (url) {
+          contentParts.push({
+            type: "file",
+            data: url,
+            mimeType: mediaType,
+            name,
+          });
+        }
+      }
+
+      return {
+        role: m.role,
+        content: contentParts,
+      };
+    })
+    .filter((m: any) => Array.isArray(m.content) && m.content.length > 0);
+
+  if (normalized.length === 0) {
+    return new Response(
+      JSON.stringify({
+        error: "No valid messages provided",
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
   const result = streamText({
     model: modelId,
     tools: config.tools || {},
     system: systemPrompt,
-    messages: convertToModelMessages(messages),
+    messages: convertToModelMessages(normalized),
     stopWhen: stepCountIs(5),
   });
 
