@@ -146,7 +146,7 @@ export async function POST(req: Request) {
   }
 
   // Otherwise use regular streamText with messages array
-  const messages = body.messages || [];
+  const messages = Array.isArray(body.messages) ? body.messages : [];
   const result = streamText({
     model: modelId,
     tools: config.tools || {},
