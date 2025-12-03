@@ -311,17 +311,39 @@ export default function Chat() {
 
   const handleSubmit = async (message: {
     text?: string;
-    files?: unknown[];
+    files?: Array<{
+      url?: string;
+      mediaType?: string;
+      type?: string;
+    }>;
   }) => {
     const text = message.text?.trim();
-    if (!text) return;
+    const imageParts =
+      message.files
+        ?.filter(
+          (file) => file?.url && file?.mediaType?.startsWith("image/")
+        )
+        .map((file) => ({
+          type: "image" as const,
+          image: file.url!,
+          mimeType: file.mediaType,
+        })) ?? [];
+
+    if (!text && imageParts.length === 0) return;
 
     try {
       if (useStructuredOutput) {
+        if (!text) return;
         setCurrentPrompt(text);
         submit(text);
       } else {
-        sendMessage({ text });
+          const content = [
+            ...(text ? [{ type: "text" as const, text }] : []),
+            ...imageParts,
+          ];
+          // sendMessage accepts either {text} or {content}; use content to pass images
+          // @ts-expect-error content is supported by ai-sdk sendMessage
+          sendMessage({ content });
       }
     } catch (error) {
       console.error("Send error:", error);
@@ -755,7 +777,7 @@ export default function Chat() {
       {/* Input Area */}
       <div className="border-t bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="max-w-4xl mx-auto px-6 py-4">
-          <PromptInput onSubmit={handleSubmit}>
+          <PromptInput accept="image/*" multiple onSubmit={handleSubmit}>
             <PromptInputBody>
               <PromptInputTextarea
                 placeholder="Type your message..."
