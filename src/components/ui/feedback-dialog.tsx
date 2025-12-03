@@ -21,6 +21,7 @@ interface FeedbackDialogProps {
   onSave: (feedback: {
     rating: "positive" | "negative";
     comment?: string;
+    gold_reply?: string;
   }) => void;
   isSaving?: boolean;
 }
@@ -33,26 +34,37 @@ export function FeedbackDialog({
 }: FeedbackDialogProps) {
   const [rating, setRating] = useState<"positive" | "negative" | null>(null);
   const [comment, setComment] = useState("");
+  const [goldReply, setGoldReply] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  const handleRatingChange = (newRating: "positive" | "negative") => {
+    setRating(newRating);
+    if (newRating === "positive") {
+      setGoldReply("");
+    }
+  };
+
   const handleSave = () => {
     if (!rating) return;
     onSave({
       rating,
       comment: comment.trim() || undefined,
+      gold_reply: goldReply.trim() || undefined,
     });
     // Reset state
     setRating(null);
     setComment("");
+    setGoldReply("");
   };
 
   const handleCancel = () => {
     setRating(null);
     setComment("");
+    setGoldReply("");
     onOpenChange(false);
   };
 
@@ -238,7 +250,7 @@ export function FeedbackDialog({
               type="button"
               variant={rating === "positive" ? "default" : "outline"}
               size="lg"
-              onClick={() => setRating("positive")}
+              onClick={() => handleRatingChange("positive")}
               data-feedback="positive"
               className={cn(
                 "flex flex-col items-center gap-2 h-auto py-4 px-8",
@@ -254,7 +266,7 @@ export function FeedbackDialog({
               type="button"
               variant={rating === "negative" ? "default" : "outline"}
               size="lg"
-              onClick={() => setRating("negative")}
+              onClick={() => handleRatingChange("negative")}
               data-feedback="negative"
               className={cn(
                 "flex flex-col items-center gap-2 h-auto py-4 px-8",
@@ -303,6 +315,29 @@ export function FeedbackDialog({
               disabled={isRecording || isProcessing}
             />
           </div>
+
+          {/* Gold reply field (visible for negative rating) */}
+          {rating === "negative" && (
+            <div className="space-y-2">
+              <label
+                htmlFor="gold-reply"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Ideal Response (Optional)
+              </label>
+              <p className="text-xs text-muted-foreground">
+                What should the assistant have said instead?
+              </p>
+              <Textarea
+                id="gold-reply"
+                placeholder="Enter the ideal response the assistant should have given..."
+                value={goldReply}
+                onChange={(e) => setGoldReply(e.target.value)}
+                className="min-h-[120px] font-mono text-sm"
+                disabled={isRecording || isProcessing}
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>

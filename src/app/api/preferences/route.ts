@@ -14,11 +14,11 @@ type Preferences = {
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
-  selectedModel: "openai/gpt-4.1-mini",
+  selectedModel: "openai/gpt-4o-mini",
   useStructuredOutput: false,
   // Optimizer defaults
-  optimizationModel: "openai/gpt-4.1-mini",
-  reflectionModel: "openai/gpt-4.1",
+  optimizationModel: "openai/gpt-4o-mini",
+  reflectionModel: "openai/gpt-4o",
   batchSize: 3,
   numRollouts: 10,
   selectedMetrics: ["accuracy"],
@@ -44,12 +44,21 @@ export async function GET() {
 }
 
 // POST: Preferences editing disabled
-export async function POST() {
-  return NextResponse.json(
-    {
-      error:
-        "Preferences must be defined in dspyground.config.ts and cannot be edited through the UI.",
-    },
-    { status: 400 }
-  );
+export async function POST(req: Request) {
+  try {
+    const incoming = (await req.json()) as Partial<Preferences>;
+    const config = await loadUserConfig();
+
+    const preferences: Preferences = {
+      ...DEFAULT_PREFERENCES,
+      ...config.preferences,
+      ...incoming,
+    };
+
+    // Note: preferences are not persisted server-side; UI keeps them in state.
+    return NextResponse.json(preferences);
+  } catch (error) {
+    console.error("Error handling preferences POST:", error);
+    return NextResponse.json(DEFAULT_PREFERENCES);
+  }
 }

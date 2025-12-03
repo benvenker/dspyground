@@ -3,14 +3,15 @@
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
-    ChevronRight,
-    Clock,
-    Database,
-    Loader2,
-    MessageSquare,
-    ThumbsDown,
-    ThumbsUp,
-    Trash2,
+  ChevronRight,
+  Clock,
+  Database,
+  Loader2,
+  MessageSquare,
+  Star,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -246,8 +247,16 @@ export default function SamplesPage() {
                         className="border rounded-lg p-6 bg-card"
                       >
                         <div className="flex items-center justify-between mb-4">
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(sample.timestamp)}
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-muted-foreground">
+                              {formatDate(sample.timestamp)}
+                            </div>
+                            {sample.feedback?.gold_reply && (
+                              <span className="inline-flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
+                                <Star className="size-3" />
+                                Gold
+                              </span>
+                            )}
                           </div>
                           {sample.feedback && (
                             <div className="flex items-center gap-2">
@@ -294,6 +303,18 @@ export default function SamplesPage() {
                             </div>
                             <div className="text-sm text-amber-900 dark:text-amber-100">
                               {sample.feedback.comment}
+                            </div>
+                          </div>
+                        )}
+
+                        {sample.feedback?.gold_reply && (
+                          <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-200 mb-2">
+                              <Star className="size-3" />
+                              Ideal Response
+                            </div>
+                            <div className="text-sm text-emerald-900 dark:text-emerald-100 whitespace-pre-wrap font-mono">
+                              {sample.feedback.gold_reply}
                             </div>
                           </div>
                         )}

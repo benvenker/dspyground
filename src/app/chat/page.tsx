@@ -10,11 +10,6 @@ import { Message, MessageContent } from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputBody,
-  PromptInputModelSelect,
-  PromptInputModelSelectContent,
-  PromptInputModelSelectItem,
-  PromptInputModelSelectTrigger,
-  PromptInputModelSelectValue,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputToolbar,
@@ -51,6 +46,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ModelCombobox } from "@/components/ui/model-combobox";
 import {
   Tooltip,
   TooltipContent,
@@ -133,7 +129,8 @@ export default function Chat() {
 
   // Hook for text chat
   const { messages, sendMessage, setMessages, status, stop } = useChat({
-    id: "chat-text",
+    // include selectedModel so the transport updates when the user changes models
+    id: `chat-text-${selectedModel || "default"}`,
     transport: new DefaultChatTransport({
       api: chatApiUrl,
     }),
@@ -155,7 +152,26 @@ export default function Chat() {
     fetch: async (url, options) => {
       // Custom fetch to send messages array just like regular chat
       const body = options?.body ? JSON.parse(options.body as string) : {};
-      const userMessage = body.prompt || body.input || "";
+
+      // Handle both object and raw-string payloads from submit(text)
+      let userMessage: string =
+        typeof body === "string"
+          ? body
+          : body.prompt ||
+            body.input ||
+            body.message ||
+            body.text ||
+            "";
+
+      if (!userMessage && typeof body === "object" && Array.isArray(body.messages)) {
+        const last = body.messages[body.messages.length - 1];
+        const c = last?.content;
+        if (typeof c === "string") userMessage = c;
+        else if (Array.isArray(c) && c.length && typeof c[0] === "string")
+          userMessage = c[0];
+      }
+
+      userMessage = (userMessage || "").trim();
 
       // Build messages array from current conversation + new message
       const messagesArray = [
@@ -262,6 +278,16 @@ export default function Chat() {
     })();
   }, []);
 
+  // Ensure selectedModel stays in sync with available models
+  useEffect(() => {
+    if (!preferencesLoaded) return;
+    if (textModels.length === 0) return;
+    const exists = textModels.some((m) => m.id === selectedModel);
+    if (!exists) {
+      setSelectedModel(textModels[0].id);
+    }
+  }, [preferencesLoaded, textModels, selectedModel, setSelectedModel]);
+
   // Save preferences when they change
   useEffect(() => {
     if (!preferencesLoaded) return;
@@ -324,6 +350,7 @@ export default function Chat() {
   const handleSaveWithFeedback = async (feedback: {
     rating: "positive" | "negative";
     comment?: string;
+    gold_reply?: string;
   }) => {
     try {
       setSavingSample(true);
@@ -738,27 +765,22 @@ export default function Chat() {
             <PromptInputToolbar>
               <PromptInputTools>
                 {preferencesLoaded && selectedModel ? (
-                  <PromptInputModelSelect
-                    value={selectedModel}
-                    onValueChange={setSelectedModel}
-                  >
-                    <PromptInputModelSelectTrigger>
-                      <PromptInputModelSelectValue />
-                    </PromptInputModelSelectTrigger>
-                    <PromptInputModelSelectContent>
-                      {textModels.length > 0 ? (
-                        textModels.map((m) => (
-                          <PromptInputModelSelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </PromptInputModelSelectItem>
-                        ))
-                      ) : (
-                        <PromptInputModelSelectItem value={selectedModel}>
-                          {selectedModel}
-                        </PromptInputModelSelectItem>
-                      )}
-                    </PromptInputModelSelectContent>
-                  </PromptInputModelSelect>
+                  <div className="w-[240px]">
+                    <ModelCombobox
+                      value={selectedModel}
+                      onChange={setSelectedModel}
+                      options={
+                        textModels.length > 0
+                          ? textModels.map((m) => ({
+                              value: m.id,
+                              label: m.name || m.id,
+                              description: m.description,
+                            }))
+                          : [{ value: selectedModel, label: selectedModel }]
+                      }
+                      placeholder="Select model"
+                    />
+                  </div>
                 ) : (
                   <div className="text-xs text-muted-foreground px-2">
                     Loading models...

@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ModelCombobox } from "@/components/ui/model-combobox";
 import type { IterationResult, MetricType } from "@/lib/optimizer-types";
 import {
   AVAILABLE_METRICS,
@@ -837,21 +838,16 @@ export default function OptimizePage() {
                     <label className="text-sm font-medium">
                       Optimization Model (Task Model)
                     </label>
-                    <Select
+                    <ModelCombobox
                       value={optimizationModel}
-                      onValueChange={setOptimizationModel}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {textModels.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={setOptimizationModel}
+                      options={textModels.map((m) => ({
+                        value: m.id,
+                        label: m.name || m.id,
+                        description: m.description,
+                      }))}
+                      placeholder="Select model"
+                    />
                   </div>
 
                   {/* Reflection Model */}
@@ -859,21 +855,16 @@ export default function OptimizePage() {
                     <label className="text-sm font-medium">
                       Reflection Model (Improves Prompts)
                     </label>
-                    <Select
+                    <ModelCombobox
                       value={reflectionModel}
-                      onValueChange={setReflectionModel}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {textModels.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={setReflectionModel}
+                      options={textModels.map((m) => ({
+                        value: m.id,
+                        label: m.name || m.id,
+                        description: m.description,
+                      }))}
+                      placeholder="Select model"
+                    />
                   </div>
 
                   <Separator className="my-4" />

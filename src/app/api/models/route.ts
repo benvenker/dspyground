@@ -1,19 +1,37 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { gateway } from "@ai-sdk/gateway";
-
 export const runtime = "nodejs";
 
 export async function GET() {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "OPENROUTER_API_KEY is missing. Add it to your environment to load models.",
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   try {
-    const available = await gateway.getAvailableModels();
+    const res = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    if (!res.ok) {
+      throw new Error(`OpenRouter responded with ${res.status}`);
+    }
+
+    const data = (await res.json()) as any;
+    const list = (data.data || data.models || []) as any[];
 
     // Minimal projection for the UI
-    const models = (available.models || []).map((m) => ({
+    const models = list.map((m) => ({
       id: m.id,
       name: m.name ?? m.id,
       description: m.description ?? null,
-      modelType: (m as any).modelType ?? (m as any).type ?? "language",
-      pricing: (m as any).pricing ?? null,
+      modelType: (m as any).modality ?? (m as any).type ?? "language",
+      pricing: (m as any).pricing ?? (m as any).prices ?? null,
     }));
 
     return new Response(
@@ -25,10 +43,25 @@ export async function GET() {
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
+    const fallbackModels = [
+      {
+        id: "openai/gpt-4o-mini",
+        name: "OpenAI GPT-4o Mini (OpenRouter)",
+        description: "Fallback default model",
+        modelType: "language",
+        pricing: null,
+      },
+    ];
+
     const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: message,
+        models: fallbackModels,
+        textModels: fallbackModels,
+        embeddingModels: [],
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }
